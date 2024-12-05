@@ -18,6 +18,8 @@ Vector2f position(Vector2f pos) {
     return scale * pos + screen_pos;
 }
 
+Font georgia;
+
 class Icon {
 private:
     string i;
@@ -107,6 +109,36 @@ public:
             screen.draw(s);
         }
     }
+    void draw_overlay(RenderWindow& screen, Vector2f mouse_position, float level = 0) {
+        Vector2f p = position({pos, level});
+        Rect bounds(p.x, p.y, scale * float(2)/3, scale * float(2)/3);
+        if (bounds.contains(mouse_position)) {
+            RectangleShape infobox;
+            infobox.setFillColor(Color(69, 71, 79));
+            infobox.setPosition(mouse_position);
+            Text name, description;
+            name.setFont(georgia);
+            description.setFont(georgia);
+            name.setString(n);
+            description.setString(d);
+            name.setCharacterSize(36);
+            description.setCharacterSize(18);
+            name.setFillColor(Color::White);
+            description.setFillColor(Color::White);
+            name.setStyle(Text::Bold);
+            name.setPosition(mouse_position + Vector2f{12, 12});
+            description.setPosition(mouse_position + Vector2f(12, 24 + name.getLocalBounds().height));
+            if (name.getLocalBounds().width > description.getLocalBounds().width) infobox.setSize(Vector2f(
+                    24 + name.getLocalBounds().width,
+                    36 + name.getLocalBounds().height + description.getLocalBounds().height));
+            else infobox.setSize(Vector2f(
+                    24 + description.getLocalBounds().width,
+                    36 + name.getLocalBounds().height + description.getLocalBounds().height));
+            screen.draw(infobox);
+            screen.draw(name);
+            screen.draw(description);
+        } else for (Icon child: children) child.draw_overlay(screen, mouse_position, level + 1);
+    }
     static vector<Icon> load_children_of(json data, const string& parent) {
         vector<Icon> children = {};
         for (auto it = data.begin(); it != data.end(); it++) {
@@ -139,8 +171,9 @@ public:
         root.to_positions();
         root.move_to(0);
     }
-    void draw(RenderWindow& screen) {
+    void draw(RenderWindow& screen, Vector2f mouse_position) {
         root.draw(screen);
+        root.draw_overlay(screen, mouse_position);
     }
 };
 
@@ -151,6 +184,7 @@ void setup() {
 
 int main() {
     setup();
+    georgia.loadFromFile("georgia.ttf");
     cout << "Tree Chart Name: ";
     string file_name;
     cin >> file_name;
@@ -167,7 +201,6 @@ int main() {
     }
     Icons icons(data);
     icons.set_positions();
-
     RenderWindow screen{{1200, 800}, "Tree Charter"};
     View view = screen.getDefaultView();
     bool fullscreen = false;
@@ -195,7 +228,7 @@ int main() {
                             }, "Tree Charter", Style::Fullscreen);
                         fullscreen = true;
                     }
-                }
+                } else if (Keyboard::isKeyPressed(Keyboard::Space)) screen_pos = Vector2f(screen.getSize() / unsigned(2));
             } else if (event.type == Event::MouseButtonPressed && event.mouseButton.button == Mouse::Right) {
                 panning = true;
                 temp_pos = Vector2f(Mouse::getPosition());
@@ -206,7 +239,7 @@ int main() {
                 temp_pos = Vector2f(Mouse::getPosition());
             }
         }
-        icons.draw(screen);
+        icons.draw(screen, Vector2f(Mouse::getPosition(screen)));
         screen.display();
     }
     return 0;
