@@ -69,19 +69,19 @@ public:
         } else return 1;
     }
     void draw(RenderWindow& screen, float level = 0) {
-        float min;
-        float max;
-        for (Icon child: children) {
-            Vector2f center(child.pos + float(1)/3, level + float(5)/6);
-            Vertex child_line[] = {
-                    Vertex(position(center + Vector2f(0, 0.5)), Color::White),
-                    Vertex(position(center), Color::White)};
-            screen.draw(child_line, 2, Lines);
-            if (center.x < min) min = center.x;
-            if (center.x > max) max = center.x;
-            child.draw(screen, level + 1);
-        }
         if (!children.empty()) {
+            float min = children[0].pos + float(1)/3;
+            float max = children[0].pos + float(1)/3;
+            for (Icon child: children) {
+                Vector2f center(child.pos + float(1)/3, level + float(5)/6);
+                Vertex child_line[] = {
+                        Vertex(position(center + Vector2f(0, 0.5)), Color::White),
+                        Vertex(position(center), Color::White)};
+                screen.draw(child_line, 2, Lines);
+                if (center.x < min) min = center.x;
+                if (center.x > max) max = center.x;
+                child.draw(screen, level + 1);
+            }
             Vector2f center(pos + float(1)/3, level + float(5)/6);
             Vertex parent_line[] = {
                     Vertex(position(center - Vector2f(0, 0.5)), Color::White),
@@ -168,21 +168,40 @@ int main() {
     Icons icons(data);
     icons.set_positions();
 
-    auto screen = RenderWindow{{1200, 800}, "Tree Charter"};
+    RenderWindow screen{{1200, 800}, "Tree Charter"};
+    View view = screen.getDefaultView();
+    bool fullscreen = false;
     screen_pos = Vector2f(screen.getSize() / unsigned(2));
     while (screen.isOpen()) {
         screen.clear();
         for (auto event = Event{}; screen.pollEvent(event);) {
             if (event.type == Event::Closed) {
                 screen.close();
+            } else if (event.type == Event::Resized) {
+                view.setSize({static_cast<float>(event.size.width), static_cast<float>(event.size.height)});
+                screen.setView(view);
+            } else if (event.type == Event::KeyPressed) {
+                if (Keyboard::isKeyPressed(Keyboard::F11)) {
+                    if (fullscreen) {
+                        screen.create({
+                            static_cast<unsigned int>(view.getSize().x),
+                            static_cast<unsigned int>(view.getSize().y)
+                            }, "Tree Charter");
+                        fullscreen = false;
+                    } else {
+                        screen.create({
+                            static_cast<unsigned int>(view.getSize().x),
+                            static_cast<unsigned int>(view.getSize().y)
+                            }, "Tree Charter", Style::Fullscreen);
+                        fullscreen = true;
+                    }
+                }
             } else if (event.type == Event::MouseButtonPressed && event.mouseButton.button == Mouse::Right) {
                 panning = true;
                 temp_pos = Vector2f(Mouse::getPosition());
-            }
-            else if (event.type == Event::MouseButtonReleased && event.mouseButton.button == Mouse::Right) {
+            } else if (event.type == Event::MouseButtonReleased && event.mouseButton.button == Mouse::Right) {
                 panning = false;
-            }
-            else if (event.type == Event::MouseMoved and panning) {
+            } else if (event.type == Event::MouseMoved and panning) {
                 screen_pos += Vector2f(Mouse::getPosition()) - temp_pos;
                 temp_pos = Vector2f(Mouse::getPosition());
             }
@@ -190,6 +209,5 @@ int main() {
         icons.draw(screen);
         screen.display();
     }
-
     return 0;
 }
