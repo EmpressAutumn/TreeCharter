@@ -25,28 +25,36 @@ private:
     string d;
     float pos = 0;
     vector<Icon> children;
+    RectangleShape box;
+    bool has_img = false;
+    Texture img;
 public:
     Icon() = default;
-    Icon(string id, string name, string description) {
+    Icon(string id, string name, string description, const string& image = "") {
         i = std::move(id);
         n = std::move(name);
         d = std::move(description);
+        box.setFillColor(Color(127, 138, 168));
+        if (!image.empty()) {
+            img.loadFromFile("img/" + image + ".png");
+            has_img = true;
+        }
     }
     void add_child(const Icon& child) {
         children.emplace_back(child);
     }
     void move_by(float distance) {
         pos += distance;
-        for (Icon child: children) child.move_by(distance);
+        for (Icon& child: children) child.move_by(distance);
     }
     void move_to(float position) {
-        for (Icon child: children) child.move_by(position - pos);
+        for (Icon& child: children) child.move_by(position - pos);
         pos = position;
     }
     float to_positions() {
         map<string, float> widths;
         float width = 0;
-        for (Icon child: children) {
+        for (Icon& child: children) {
             float w = child.to_positions();
             widths[child.i] = w;
             width += w;
@@ -87,17 +95,26 @@ public:
             }
         }
         float side_length = scale * float(2)/3;
-        RectangleShape drawable({side_length, side_length});
-        drawable.setFillColor(Color::Blue);
-        drawable.setPosition(position({pos, level}));
-        screen.draw(drawable);
+        box.setSize({side_length, side_length});
+        box.setPosition(position({pos, level}));
+        screen.draw(box);
+        if (has_img) {
+            Sprite s(img);
+            float x_scale = scale * float(8)/15 / s.getLocalBounds().getSize().x;
+            float y_scale = scale * float(8)/15 / s.getLocalBounds().getSize().y;
+            s.setScale({x_scale, y_scale});
+            s.setPosition(position(Vector2f(pos + float(1)/15, level + float(1)/15)));
+            screen.draw(s);
+        }
     }
     static vector<Icon> load_children_of(json data, const string& parent) {
         vector<Icon> children = {};
         for (auto it = data.begin(); it != data.end(); it++) {
             const string& id = it.key();
             if (data[id]["parent"] == parent) {
-                Icon icon(id, data[id]["name"], data[id]["description"]);
+                Icon icon;
+                if (data[id]["image"].is_null()) icon = Icon(id, data[id]["name"], data[id]["description"]);
+                else icon = Icon(id, data[id]["name"], data[id]["description"], data[id]["image"]);
                 for (const Icon& child: load_children_of(data, id)) {
                     icon.add_child(child);
                 }
@@ -113,7 +130,8 @@ private:
     Icon root;
 public:
     explicit Icons(json data) {
-        root = Icon("root", data["root"]["name"], data["root"]["description"]);
+        if (data["root"]["image"].is_null()) root = Icon("root", data["root"]["name"], data["root"]["description"]);
+        else root = Icon("root", data["root"]["name"], data["root"]["description"], data["root"]["image"]);
         for (const Icon& child: Icon::load_children_of(data, "root")) root.add_child(child);
         root.move_to(0);
     }
@@ -128,7 +146,7 @@ public:
 
 void setup() {
     if (!filesystem::exists("charts/")) filesystem::create_directories("charts/");
-    //if (!filesystem::exists("img/")) filesystem::create_directories("img/");
+    if (!filesystem::exists("img/")) filesystem::create_directories("img/");
 }
 
 int main() {
