@@ -16,6 +16,11 @@ FetchContent_MakeAvailable(sfml json)
 
 add_executable(TreeCharter main.cpp)
 
+add_custom_command(
+        TARGET TreeCharter POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/georgia.ttf" ${CMAKE_BINARY_DIR}/bin
+)
+
 target_link_libraries(TreeCharter PRIVATE sfml-graphics nlohmann_json)
 target_compile_features(TreeCharter PRIVATE cxx_std_17)
 
