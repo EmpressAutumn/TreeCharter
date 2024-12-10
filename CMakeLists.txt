@@ -14,12 +14,7 @@ FetchContent_Declare(json
         URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz)
 FetchContent_MakeAvailable(sfml json)
 
-add_executable(TreeCharter main.cpp)
-
-add_custom_command(
-        TARGET TreeCharter POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/georgia.ttf" ${CMAKE_BINARY_DIR}/bin
-)
+add_executable(TreeCharter main.cpp georgia.h)
 
 target_link_libraries(TreeCharter PRIVATE sfml-graphics nlohmann_json)
 target_compile_features(TreeCharter PRIVATE cxx_std_17)

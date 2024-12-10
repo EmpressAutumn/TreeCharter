@@ -5,6 +5,8 @@
 #include <SFML/Graphics.hpp>
 #include <utility>
 
+#include "georgia.h"
+
 using namespace nlohmann;
 using namespace std;
 using namespace sf;
@@ -184,7 +186,7 @@ void setup() {
 
 int main() {
     setup();
-    georgia.loadFromFile("georgia.ttf");
+    georgia.loadFromMemory(georgia_ttf, georgia_ttf_len);
     cout << "Tree Chart Name: ";
     string file_name;
     cin >> file_name;
